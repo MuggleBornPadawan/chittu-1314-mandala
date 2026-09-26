@@ -109,17 +109,6 @@
             canonical-names (set (map name (keys mandala/pigment-hex-map)))]
         (is (empty? (set/difference palette-names canonical-names)))))))
 
-(deftest test-petal-overlap
-  (testing "Overlap param exists, varies per seed, stays in range"
-    (let [a42 (mandala/generate {:seed 42})
-          a99 (mandala/generate {:seed 99})
-          b42 (mandala/generate {:seed 42})
-          ov42 (:petal-overlap (:params a42))]
-      (is (= (:params b42) (:params a42)) "same seed same params")
-      (is (some? ov42) "overlap param must exist")
-      (is (<= 1.1 ov42 1.5) "overlap capped to avoid mud")
-      (is (not= ov42 (:petal-overlap (:params a99))) "different seeds differ"))))
-
 (deftest test-rim-64-and-bindu
   (testing "Flame rim has 64 teeth, bindu stays at origin"
     (let [art (mandala/generate {:seed 42})

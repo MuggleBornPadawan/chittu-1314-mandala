@@ -44,10 +44,9 @@
         (check "json-seed-42" (= 42 (:seed art)) (str "seed " (:seed art)))
         (check "json-prims" (pos? (count (:primitives art)))
                (str (count (:primitives art)) " prims"))
-        ;; Freshness: overlap param only exists in post-upgrade exports
-        (check "json-fresh-overlap"
-               (contains? (:params art) :petal-overlap)
-               "stale deploy if missing")))))
+        (check "json-params-jitter"
+               (contains? (:params art) :petal-width-jitter)
+               "jitter param missing")))))
 
 ;; 3. SVG renders with glow defs
 (let [{:keys [status body]} (fetch "/mandala.svg")]

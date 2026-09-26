@@ -157,8 +157,7 @@
         ;; Seed-driven shape variety (fixed RNG order: width, curl, jewel)
         width-jitter (get user-params :petal-width-jitter (next-double 0.85 1.15))
         curl (get user-params :petal-curl (next-double -0.15 0.15))
-        jewel-density (get user-params :jewel-density (next-double 0.5 1.0))
-        overlap (get user-params :petal-overlap (next-double 1.1 1.5))]
+        jewel-density (get user-params :jewel-density (next-double 0.5 1.0))]
 
     (merge
      {:symmetry-order       sym
@@ -173,7 +172,6 @@
       :petal-width-jitter   width-jitter
       :petal-curl           curl
       :jewel-density        jewel-density
-      :petal-overlap        overlap
       :palette              pal}
      user-params)))
 
@@ -289,27 +287,25 @@
 
 (defn- ring-sector-motifs
   "Generate motif primitives for one angular sector of ring `ring-idx`."
-  ([ring-idx inner-r outer-r sector-angle depth total-petals symmetry-order palette-hex shape]
-   (ring-sector-motifs ring-idx inner-r outer-r sector-angle depth total-petals symmetry-order palette-hex shape 0.0))
-  ([ring-idx inner-r outer-r sector-angle depth total-petals symmetry-order palette-hex shape phase-offset]
-   (let [k             (max 1 (quot total-petals symmetry-order))
-         half-width    (* (/ sector-angle (* 2.0 k)) 0.94 (:width-jitter shape 1.0))
-         curl          (:curl shape 0.0)
-         jewel-density (:jewel-density shape 1.0)
-         col-gold      (get pigment-hex-map :gold-leaf)
-         col-white     (get pigment-hex-map :conch-white)
-         col-black     (get pigment-hex-map :lampblack)
-         col-primary   (nth palette-hex (mod ring-idx (count palette-hex)))
-         col-secondary (nth palette-hex (mod (+ ring-idx 2) (count palette-hex)))
-         col-accent    (nth palette-hex (mod (+ ring-idx 4) (count palette-hex)))]
-     (vec
-      (mapcat (fn [j]
-                (let [mid-angle (+ (* sector-angle (/ (+ j 0.5) (double k))) (or phase-offset 0.0))]
-                  (single-petal-motifs inner-r outer-r mid-angle half-width depth
-                                       col-primary col-secondary col-accent
-                                       col-gold col-white col-black
-                                       (:width-jitter shape 1.0) curl jewel-density)))
-              (range k))))))
+  [ring-idx inner-r outer-r sector-angle depth total-petals symmetry-order palette-hex shape]
+  (let [k             (max 1 (quot total-petals symmetry-order))
+        half-width    (* (/ sector-angle (* 2.0 k)) 0.96 (:width-jitter shape 1.0))
+        curl          (:curl shape 0.0)
+        jewel-density (:jewel-density shape 1.0)
+        col-gold      (get pigment-hex-map :gold-leaf)
+        col-white     (get pigment-hex-map :conch-white)
+        col-black     (get pigment-hex-map :lampblack)
+        col-primary   (nth palette-hex (mod ring-idx (count palette-hex)))
+        col-secondary (nth palette-hex (mod (+ ring-idx 2) (count palette-hex)))
+        col-accent    (nth palette-hex (mod (+ ring-idx 4) (count palette-hex)))]
+    (vec
+     (mapcat (fn [j]
+               (let [mid-angle (* sector-angle (/ (+ j 0.5) (double k)))]
+                 (single-petal-motifs inner-r outer-r mid-angle half-width depth
+                                      col-primary col-secondary col-accent
+                                      col-gold col-white col-black
+                                      (:width-jitter shape 1.0) curl jewel-density)))
+             (range k)))))
 
 (defn- lace-sector-motifs
   "Generate pearl chain plus diamond links on mid radius of a ring band."
@@ -720,8 +716,7 @@
          sector-angle  (/ (* 2.0 Math/PI) (double symmetry-order))
          shape         {:width-jitter (:petal-width-jitter p 1.0)
                         :curl (:petal-curl p 0.0)
-                        :jewel-density (:jewel-density p 1.0)
-                        :overlap (:petal-overlap p 1.0)}
+                        :jewel-density (:jewel-density p 1.0)}
          palette-hex   (mapv #(get pigment-hex-map % (get pigment-hex-map :gold-leaf)) palette)
          palette-meta  (mapv (fn [k] {:name (name k) :hex (get pigment-hex-map k)}) palette)
          col-gold      (get pigment-hex-map :gold-leaf)
@@ -769,20 +764,12 @@
          ring-layers
          (mapv
           (fn [i]
-            (let [r-prev      (if (zero? i) bindu-radius (nth ring-radii (dec i)))
-                  r-curr      (nth ring-radii i)
-                  ring-span   (- r-curr r-prev)
-                  ;; Inter-ring radial tuck: outer petals extend slightly under inner ring perimeter
-                  radial-tuck (if (zero? i) 0.0 (* ring-span 0.08 (:overlap shape 1.2)))
-                  inner-r     (max 0.02 (- r-prev radial-tuck))
-                  outer-r     r-curr
-                  depth       (nth motif-depths i 1)
-                  petals      (nth petal-count-per-ring i symmetry-order)
-                  k           (max 1 (quot petals symmetry-order))
-                  prev-k      (if (zero? i) 0 (max 1 (quot (nth petal-count-per-ring (dec i) symmetry-order) symmetry-order)))
-                  phase-off   (if (= k prev-k) (/ sector-angle (* 2.0 k)) 0.0)
-                  sector-m    (ring-sector-motifs i inner-r outer-r sector-angle depth petals symmetry-order palette-hex shape phase-off)
-                  replicated  (replicate-d-n sector-m symmetry-order {:mirror? true})]
+            (let [inner-r    (if (zero? i) bindu-radius (nth ring-radii (dec i)))
+                  outer-r    (nth ring-radii i)
+                  depth      (nth motif-depths i 1)
+                  petals     (nth petal-count-per-ring i symmetry-order)
+                  sector-m   (ring-sector-motifs i inner-r outer-r sector-angle depth petals symmetry-order palette-hex shape)
+                  replicated (replicate-d-n sector-m symmetry-order {:mirror? true})]
               {:id (keyword (str "ring-" i))
                :z-index (+ 2 i)
                :primitives (vec replicated)}))
