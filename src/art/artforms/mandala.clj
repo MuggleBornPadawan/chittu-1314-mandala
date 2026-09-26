@@ -293,6 +293,28 @@
                                       col-gold col-white col-black)))
              (range k)))))
 
+(defn- lace-sector-motifs
+  "Generate pearl chain plus diamond links on mid radius of a ring band."
+  [inner-r outer-r sector-angle symmetry-order]
+  (let [mid-r (/ (+ inner-r outer-r) 2.0)
+        col-gold (get pigment-hex-map :gold-leaf)
+        col-white (get pigment-hex-map :conch-white)
+        col-black (get pigment-hex-map :lampblack)
+        pearl {:type :circle
+               :center (polar->cart mid-r (/ sector-angle 2.0))
+               :radius 0.006
+               :fill col-white
+               :stroke col-black
+               :stroke-width 0.001}
+        d 0.012
+        [pcx pcy] (polar->cart mid-r 0.0)
+        diamond {:type :polygon
+                 :points [[pcx (- pcy d)] [(+ pcx d) pcy] [pcx (+ pcy d)] [(- pcx d) pcy]]
+                 :fill col-gold
+                 :stroke col-black
+                 :stroke-width 0.001}]
+    (vec (replicate-d-n [pearl diamond] symmetry-order))))
+
 ;; =============================================================================
 ;; Cardinal Torana Gate Architecture (Sacred Portals)
 ;; =============================================================================
@@ -625,11 +647,22 @@
                :primitives (vec replicated)}))
           (range valid-rings))
 
-         ;; 4. Central Bindu (Topmost Layer)
-         bindu-l       (bindu-layer bindu-radius)
+          ;; 3b. Lace Layers per Ring Band
+          lace-layers
+          (mapv
+           (fn [i]
+             (let [inner-r (if (zero? i) bindu-radius (nth ring-radii (dec i)))
+                   outer-r (nth ring-radii i)]
+               {:id (keyword (str "lace-" i))
+                :z-index (+ 30 i)
+                :primitives (lace-sector-motifs inner-r outer-r sector-angle symmetry-order)}))
+           (range valid-rings))
 
-          ;; Compose All Layers in strict z-index order
-          all-layers    (into [boundary-l backgrounds-l] (concat ring-layers [gates-l bindu-l]))
+          ;; 4. Central Bindu (Topmost Layer)
+          bindu-l       (bindu-layer bindu-radius)
+
+           ;; Compose All Layers in strict z-index order
+           all-layers    (into [boundary-l backgrounds-l] (concat ring-layers lace-layers [gates-l bindu-l]))
          all-prims     (vec (mapcat :primitives all-layers))]
 
      {:seed       seed

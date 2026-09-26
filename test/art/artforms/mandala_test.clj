@@ -108,6 +108,17 @@
             canonical-names (set (map name (keys mandala/pigment-hex-map)))]
         (is (empty? (set/difference palette-names canonical-names)))))))
 
+(deftest test-lace-inside-band
+  (testing "Lace pearls sit inside first ring band"
+    (let [art (mandala/generate {:seed 42})
+          by-id (into {} (map (juxt :id identity) (:layers art)))
+          lace (:lace-0 by-id)]
+      (is (some? lace) "lace-0 layer must exist")
+      (doseq [p (:primitives lace)]
+        (let [[cx cy] (or (:center p) (first (:points p)))
+              r (Math/sqrt (+ (* cx cx) (* cy cy)))]
+          (is (<= 0.03 r 0.30) (str "lace prim outside band: " r)))))))
+
 (deftest test-mirror-doubles
   (testing "Mirror replicates across x-axis"
     (let [prim {:type :line :from [0.1 0.0] :to [0.2 0.0] :stroke "#000" :stroke-width 0.002}
