@@ -363,12 +363,7 @@
      "      <button class=\"btn btn-secondary\" onclick=\"window.scittleDownloadPNG()\">Keep this one</button>\n"
      "    </div>\n"
      "  </div>\n"
-     "\n"
-     "  <!-- Art Frame: Updated in-place by Scittle -->\n"
-     "  <div class=\"art-frame\" id=\"art-frame\">\n"
-     "    " initial-svg-str "\n"
-     "  </div>\n"
-     "\n"
+
      "  <div class=\"palette-strip\" id=\"palette-strip\">\n"
      (str/join "\n"
                (map (fn [{:keys [name hex]}]
