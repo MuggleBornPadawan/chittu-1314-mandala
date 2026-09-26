@@ -1,0 +1,28 @@
+{:paths ["src" "test"]
+ :tasks
+ {test
+  {:doc "Run unit tests"
+   :task (do
+           (require 'art.artforms.mandala-test)
+           (let [r ((requiring-resolve 'clojure.test/run-tests) 'art.artforms.mandala-test)]
+             (when (pos? (+ (:fail r) (:error r)))
+               (System/exit 1))))}
+
+  export
+  {:doc "Export mandala artwork to art.json, SVG, and HTML preview"
+   :task (do
+           (require 'art.export)
+           (let [seed (or (some-> (first *command-line-args*) parse-long)
+                          (System/currentTimeMillis))
+                 res  ((requiring-resolve 'art.export/export-all!) {:seed seed :out-dir "public"})]
+             (println "Exported Mandala artwork (Seed" (:seed res) "):")
+             (println " - JSON:" (:json-file res))
+             (println " - SVG: " (:svg-file res))
+             (println " - HTML:" (:html-file res))))}
+
+  serve
+  {:doc "Serve public/ directory via zero-dependency Babashka HTTP server"
+   :task (do
+           (require 'art.server)
+           (let [port (or (some-> (first *command-line-args*) parse-long) 8000)]
+             ((requiring-resolve 'art.server/serve!) "public" port)))}}}

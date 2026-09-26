@@ -1,0 +1,9 @@
+{:paths ["src"]
+ :deps {org.clojure/clojure {:mvn/version "1.12.0"}
+        cheshire/cheshire   {:mvn/version "5.13.0"}
+        babashka/fs         {:mvn/version "0.8.20"}}
+ :aliases
+ {:test
+  {:extra-paths ["test"]}
+  :export
+  {:main-opts ["-e" "(require 'art.export) ((requiring-resolve 'art.export/export-all!) {:seed 42 :out-dir \"public\"})"]}}}
