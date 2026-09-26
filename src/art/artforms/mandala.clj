@@ -474,26 +474,88 @@
 ;; =============================================================================
 
 (defn- corner-rosette
-  "Generate sacred quadrant rosette in corner space between circle and square."
+  "Generate sacred quadrant rosette plus 5-dot vine fan in corner space."
   [[cx cy] col-vermilion col-gold col-white col-black]
-  [{:type :circle
-    :center [cx cy]
-    :radius 0.055
-    :fill col-vermilion
-    :stroke col-gold
-    :stroke-width 0.003}
-   {:type :circle
-    :center [cx cy]
-    :radius 0.035
-    :fill col-gold
-    :stroke col-black
-    :stroke-width 0.002}
-   {:type :circle
-    :center [cx cy]
-    :radius 0.018
-    :fill col-white
-    :stroke col-black
-    :stroke-width 0.0015}])
+  (let [fan-dots (mapv (fn [k]
+                         (let [a (+ (/ Math/PI 4.0) (* k (/ Math/PI 24.0)))
+                               dx (* 0.09 (Math/cos a))
+                               dy (* 0.09 (Math/sin a))
+                               sx (if (pos? cx) 1 -1)
+                               sy (if (pos? cy) 1 -1)]
+                           {:type :circle
+                            :center [(+ cx (* sx dx)) (+ cy (* sy dy))]
+                            :radius 0.008
+                            :fill col-white
+                            :stroke col-black
+                            :stroke-width 0.001}))
+                       (range 5))
+        base [{:type :circle
+               :center [cx cy]
+               :radius 0.055
+               :fill col-vermilion
+               :stroke col-gold
+               :stroke-width 0.003}
+              {:type :circle
+               :center [cx cy]
+               :radius 0.035
+               :fill col-gold
+               :stroke col-black
+               :stroke-width 0.002}
+              {:type :circle
+               :center [cx cy]
+               :radius 0.018
+               :fill col-white
+               :stroke col-black
+               :stroke-width 0.0015}
+              {:type :circle
+               :center [cx cy]
+               :radius 0.075
+               :fill nil
+               :stroke col-gold
+               :stroke-width 0.0015}
+              {:type :circle
+               :center [cx cy]
+               :radius 0.095
+               :fill nil
+               :stroke col-white
+               :stroke-width 0.001}
+              {:type :circle
+               :center [cx cy]
+               :radius 0.115
+               :fill nil
+               :stroke col-gold
+               :stroke-width 0.001}
+              {:type :circle
+               :center [cx cy]
+               :radius 0.004
+               :fill col-gold
+               :stroke col-black
+               :stroke-width 0.001}
+              {:type :circle
+               :center [(+ cx (if (pos? cx) 0.115 -0.115)) cy]
+               :radius 0.004
+               :fill col-gold
+               :stroke col-black
+               :stroke-width 0.001}
+              {:type :circle
+               :center [cx (+ cy (if (pos? cy) 0.115 -0.115))]
+               :radius 0.004
+               :fill col-gold
+               :stroke col-black
+               :stroke-width 0.001}
+              {:type :circle
+               :center [(+ cx (if (pos? cx) -0.115 0.115)) cy]
+               :radius 0.004
+               :fill col-gold
+               :stroke col-black
+               :stroke-width 0.001}
+              {:type :circle
+               :center [cx (+ cy (if (pos? cy) -0.115 0.115))]
+               :radius 0.004
+               :fill col-gold
+               :stroke col-black
+               :stroke-width 0.001}]]
+    (vec (concat base fan-dots))))
 
 (defn- square-boundary-layer
   "Generate square outer boundary enclosure enclosing the circular mandala."
@@ -548,43 +610,92 @@
                (torana-gate-cardinal :north s torana-w torana-d col-gold col-vermilion col-white col-black)
                (torana-gate-cardinal :south s torana-w torana-d col-gold col-vermilion col-white col-black)
                (torana-gate-cardinal :east s torana-w torana-d col-gold col-vermilion col-white col-black)
-               (torana-gate-cardinal :west s torana-w torana-d col-gold col-vermilion col-white col-black))]
+               (torana-gate-cardinal :west s torana-w torana-d col-gold col-vermilion col-white col-black))
+        hw (/ torana-w 2.0)
+        pillar (fn [c] {:type :circle :center c :radius 0.014
+                        :fill col-vermilion :stroke col-gold :stroke-width 0.002})
+        pillars [(pillar [(+ hw 0.03) (- s 0.02)]) (pillar [(- (+ hw 0.03)) (- s 0.02)])
+                 (pillar [(+ hw 0.03) (- (- s) -0.02)]) (pillar [(- (+ hw 0.03)) (- (- s) -0.02)])
+                 (pillar [(- s 0.02) (+ hw 0.03)]) (pillar [(- s 0.02) (- (+ hw 0.03))])
+                 (pillar [(- (- s) -0.02) (+ hw 0.03)]) (pillar [(- (- s) -0.02) (- (+ hw 0.03))])]]
     {:id :torana-gates
      :z-index 5
-     :primitives (vec gates)}))
+     :primitives (vec (concat gates pillars))}))
 
 ;; =============================================================================
 ;; Central Bindu Layer
 ;; =============================================================================
 
 (defn- bindu-layer
-  "Generate central bindu (cosmological origin seed) layer."
+  "Generate central bindu (cosmological origin seed) with halo and 8-seed lotus seat."
   [radius]
   (let [col-gold      (get pigment-hex-map :gold-leaf)
         col-vermilion (get pigment-hex-map :vermilion)
         col-white     (get pigment-hex-map :conch-white)
-        col-black     (get pigment-hex-map :lampblack)]
+        col-black     (get pigment-hex-map :lampblack)
+        halo {:type :circle
+              :center [0.0 0.0]
+              :radius (* radius 1.8)
+              :fill nil
+              :stroke col-gold
+              :stroke-width 0.002}
+        seat (mapv (fn [k]
+                     (let [a (* k (/ (* 2.0 Math/PI) 8.0))
+                           [sx sy] (polar->cart (* radius 2.6) a)]
+                       {:type :circle
+                        :center [sx sy]
+                        :radius (* radius 0.16)
+                        :fill col-white
+                        :stroke col-black
+                        :stroke-width 0.001}))
+                   (range 8))]
     {:id :bindu
      :z-index 100
      :primitives
-     [{:type :circle
-       :center [0.0 0.0]
-       :radius radius
-       :fill col-vermilion
-       :stroke col-gold
-       :stroke-width 0.003}
-      {:type :circle
-       :center [0.0 0.0]
-       :radius (* radius 0.65)
-       :fill col-gold
-       :stroke col-black
-       :stroke-width 0.002}
-      {:type :circle
-       :center [0.0 0.0]
-       :radius (* radius 0.30)
-       :fill col-white
-       :stroke col-black
-       :stroke-width 0.0015}]}))
+     (vec (concat
+           [{:type :circle
+             :center [0.0 0.0]
+             :radius radius
+             :fill col-vermilion
+             :stroke col-gold
+             :stroke-width 0.003}
+            {:type :circle
+             :center [0.0 0.0]
+             :radius (* radius 0.65)
+             :fill col-gold
+             :stroke col-black
+             :stroke-width 0.002}
+            {:type :circle
+             :center [0.0 0.0]
+             :radius (* radius 0.30)
+             :fill col-white
+             :stroke col-black
+             :stroke-width 0.0015}]
+           [halo]
+           seat))}))
+
+(defn- flame-rim-layer
+  "Generate 64-tooth flame rim triangles at r 0.84."
+  []
+  (let [n 64 r 0.84 w-step (/ Math/PI n 2.0) h 0.03
+        col-gold (get pigment-hex-map :gold-leaf)
+        col-black (get pigment-hex-map :lampblack)]
+    {:id :flame-rim
+     :z-index 6
+     :primitives
+     (vec (for [i (range n)]
+            (let [a (* i (/ (* 2.0 Math/PI) n))
+                  [bx by] (polar->cart r a)
+                  [tx ty] (polar->cart (+ r h) a)
+                  pa (+ a w-step)
+                  [lx ly] (polar->cart r pa)
+                  na (- a w-step)
+                  [rx ry] (polar->cart r na)]
+              {:type :polygon
+               :points [[lx ly] [tx ty] [rx ry] [bx by]]
+               :fill col-gold
+               :stroke col-black
+               :stroke-width 0.0012})))}))
 
 ;; =============================================================================
 ;; Main Pure Generate Function (PCG Contract)
@@ -675,11 +786,12 @@
                :primitives (lace-sector-motifs inner-r outer-r sector-angle symmetry-order)}))
           (range valid-rings))
 
-          ;; 4. Central Bindu (Topmost Layer)
+          ;; 4. Flame rim + Central Bindu (Topmost Layers)
+         rim-l         (flame-rim-layer)
          bindu-l       (bindu-layer bindu-radius)
 
-           ;; Compose All Layers in strict z-index order
-         all-layers    (into [boundary-l backgrounds-l] (concat ring-layers lace-layers [gates-l bindu-l]))
+          ;; Compose All Layers in strict z-index order
+         all-layers    (into [boundary-l backgrounds-l] (concat ring-layers lace-layers [rim-l gates-l bindu-l]))
          all-prims     (vec (mapcat :primitives all-layers))]
 
      {:seed       seed

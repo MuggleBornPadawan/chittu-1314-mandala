@@ -109,6 +109,16 @@
             canonical-names (set (map name (keys mandala/pigment-hex-map)))]
         (is (empty? (set/difference palette-names canonical-names)))))))
 
+(deftest test-rim-64-and-bindu
+  (testing "Flame rim has 64 teeth, bindu stays at origin"
+    (let [art (mandala/generate {:seed 42})
+          by-id (into {} (map (juxt :id identity) (:layers art)))
+          rim (:flame-rim by-id)
+          bindu (:bindu by-id)]
+      (is (some? rim) "flame-rim layer must exist")
+      (is (= 64 (count (:primitives rim))) "rim must have 64 teeth")
+      (is (= [0.0 0.0] (:center (first (:primitives bindu)))) "bindu at origin"))))
+
 (deftest test-seed-shape-variance
   (testing "Different seeds vary shape params, same seed is stable"
     (let [a42 (mandala/generate {:seed 42})
