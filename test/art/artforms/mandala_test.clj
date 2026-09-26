@@ -1,5 +1,6 @@
 (ns art.artforms.mandala-test
   (:require [clojure.set :as set]
+            [clojure.string :as str]
             [clojure.test :refer [deftest is testing]]
             [art.artforms.mandala :as mandala]))
 
@@ -107,6 +108,12 @@
       (let [palette-names (set (map :name (:palette art)))
             canonical-names (set (map name (keys mandala/pigment-hex-map)))]
         (is (empty? (set/difference palette-names canonical-names)))))))
+
+(deftest test-svg-has-gradient
+  (testing "SVG defines glow gradient, palette is muted"
+    (let [export-src (slurp "src/art/export.clj")]
+      (is (str/includes? export-src "<radialGradient") "SVG must define gradients")
+      (is (not= "#0BDA51" (get mandala/pigment-hex-map :malachite)) "neon green must be muted"))))
 
 (deftest test-lace-inside-band
   (testing "Lace pearls sit inside first ring band"

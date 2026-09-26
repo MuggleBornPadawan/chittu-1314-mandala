@@ -11,7 +11,7 @@
 (def pigment-hex-map
   {:lapis-lazuli    "#26619C"
    :vermilion       "#E34234"
-   :malachite       "#0BDA51"
+   :malachite       "#1E9E50"
    :conch-white     "#FAF0E6"
    :gold-leaf       "#D4A017"
    :cinnabar        "#E44D2E"

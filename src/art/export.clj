@@ -22,7 +22,10 @@
 
 (defn- primitive->svg
   [prim canvas-size]
-  (let [scale-w (fn [w] (* (or w 0.002) canvas-size 0.5))]
+  (let [scale-w (fn [w]
+                  (let [w0 (or w 0.002)
+                        thin (if (and (= (:type prim) :circle) (> (:radius prim 0) 0.5)) 0.6 1.0)]
+                    (* w0 canvas-size 0.5 thin)))]
     (case (:type prim)
       :circle
       (let [[cx cy] (:center prim)
@@ -81,13 +84,32 @@
   ([art size]
    (let [sorted-layers (sort-by :z-index (:layers art))
          body-prims    (mapcat :primitives sorted-layers)
-         prims-svg     (map #(primitive->svg % size) body-prims)]
+         bindu-r       (get-in art [:params :bindu-radius] 0.04)
+         glow?         (fn [p]
+                         (and (= :circle (:type p))
+                              (= [0.0 0.0] (:center p))
+                              (= bindu-r (:radius p))))
+         render-one    (fn [p]
+                         (let [s (primitive->svg p size)]
+                           (if (glow? p)
+                             (clojure.string/replace s "<circle " "<circle filter=\"url(#soft-glow)\" ")
+                             s)))
+         prims-svg     (map render-one body-prims)]
      (str "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
           (format "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 %d %d\" width=\"100%%\" height=\"100%%\">\n" size size)
           "<defs>\n"
           "  <style>\n"
           "    .bg { fill: #061735; }\n"
           "  </style>\n"
+          "  <radialGradient id=\"bindu-glow\" cx=\"50%\" cy=\"50%\" r=\"50%\">\n"
+          "    <stop offset=\"0%\" stop-color=\"#FAF0E6\" />\n"
+          "    <stop offset=\"60%\" stop-color=\"#D4A017\" />\n"
+          "    <stop offset=\"100%\" stop-color=\"#E34234\" />\n"
+          "  </radialGradient>\n"
+          "  <filter id=\"soft-glow\" x=\"-30%\" y=\"-30%\" width=\"160%\" height=\"160%\">\n"
+          "    <feGaussianBlur stdDeviation=\"2\" result=\"b\" />\n"
+          "    <feComposite in=\"SourceGraphic\" in2=\"b\" operator=\"over\" />\n"
+          "  </filter>\n"
           "</defs>\n"
           (format "<rect class=\"bg\" width=\"%d\" height=\"%d\" />\n" size size)
           (str/join "" prims-svg)
