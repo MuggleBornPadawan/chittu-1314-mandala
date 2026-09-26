@@ -108,6 +108,12 @@
             canonical-names (set (map name (keys mandala/pigment-hex-map)))]
         (is (empty? (set/difference palette-names canonical-names)))))))
 
+(deftest test-mirror-doubles
+  (testing "Mirror replicates across x-axis"
+    (let [prim {:type :line :from [0.1 0.0] :to [0.2 0.0] :stroke "#000" :stroke-width 0.002}
+          out (mandala/replicate-d-n [prim] 8 {:mirror? true})]
+      (is (= 16 (count out)) "8 rotations x 2 mirror = 16"))))
+
 (deftest test-gates-above-discs
   (testing "Torana gates draw above annular discs"
     (let [art (mandala/generate {:seed 42})

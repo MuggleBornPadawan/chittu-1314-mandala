@@ -84,14 +84,45 @@
 
     prim))
 
+(defn mirror-primitive
+  "Mirror primitive across y-axis (negate x)."
+  [prim]
+  (case (:type prim)
+    :circle
+    (update prim :center (fn [[x y]] [(- x) y]))
+
+    :arc
+    (-> prim
+        (update :center (fn [[x y]] [(- x) y]))
+        (update :start-angle -)
+        (update :end-angle -))
+
+    :polygon
+    (update prim :points (fn [pts] (mapv (fn [[x y]] [(- x) y]) pts)))
+
+    :line
+    (-> prim
+        (update :from (fn [[x y]] [(- x) y]))
+        (update :to (fn [[x y]] [(- x) y])))
+
+    :rect
+    (update prim :center (fn [[x y]] [(- x) y]))
+
+    prim))
+
 (defn replicate-d-n
-  "Replicate primitives across n angular sectors (dihedral rotational group)."
-  [prims n]
-  (let [step (/ (* 2.0 Math/PI) (double n))]
-    (mapcat (fn [i]
-              (let [rot (* i step)]
-                (mapv #(rotate-primitive % rot) prims)))
-            (range n))))
+  "Replicate primitives across n angular sectors (dihedral rotational group).
+   Pass {:mirror? true} for full dihedral mirror copy per sector."
+  ([prims n] (replicate-d-n prims n nil))
+  ([prims n {:keys [mirror?]}]
+   (let [step (/ (* 2.0 Math/PI) (double n))]
+     (mapcat (fn [i]
+               (let [rot (* i step)
+                     base (mapv #(rotate-primitive % rot) prims)]
+                 (if mirror?
+                   (concat base (mapv mirror-primitive base))
+                   base)))
+             (range n)))))
 
 ;; =============================================================================
 ;; Dynamic Parameter Derivation
@@ -588,7 +619,7 @@
                   depth      (nth motif-depths i 1)
                   petals     (nth petal-count-per-ring i symmetry-order)
                   sector-m   (ring-sector-motifs i inner-r outer-r sector-angle depth petals symmetry-order palette-hex)
-                  replicated (replicate-d-n sector-m symmetry-order)]
+                  replicated (replicate-d-n sector-m symmetry-order {:mirror? true})]
               {:id (keyword (str "ring-" i))
                :z-index (+ 2 i)
                :primitives (vec replicated)}))
