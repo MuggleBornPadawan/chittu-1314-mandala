@@ -1,59 +1,88 @@
-# Chitrapata Atelier — Procedural Mandala Generator
+# Chitrapata Atelier — Procedural Mandala
 
-> **Live Demo:** https://mugglebornpadawan.github.io/chittu-1314-mandala/
+> **View it live:** https://mugglebornpadawan.github.io/chittu-1314-mandala/
 
-Procedural Indian sacred geometry generator for **Chittu 13.14**.
-Written in pure functional **Clojure** and executable with **Babashka** (`bb`) and **Scittle**.
-
----
-
-## Features
-
-- **Pure Functional Core**: Decoupled geometry generation with zero side effects and zero renderer dependencies.
-- **Strict Dihedral Symmetry**: Generates $D_8, D_{12}$, or $D_{16}$ sacred quadrant geometry.
-- **Normalized Coordinates**: All vertices and paths map to $[-1.0, 1.0]$ space.
-- **Cross-Platform Determinism**: Pure LCG pseudo-random generator produces identical outputs on JVM Clojure, Babashka, and in-browser Scittle.
-- **Dynamic Time-Seeding**: Uses timestamp seeds (`System/currentTimeMillis` or `js/Date.now`) for infinite dynamic variations with full reproducibility.
-- **Live In-Browser Updates**: Interactive Scittle viewer runs directly in browser memory without full page reloads.
-- **Zero-Dependency Local Server**: Built-in Babashka HTTP server with zero Maven or npm downloads.
+A mandala that never repeats itself. Each visit grows a new one from a single number — a seed. Note the seed down, and that exact mandala is yours to return to, forever.
 
 ---
 
-## Visual Invariants (Sacred Grammar)
+## The Artwork
 
-1. **Central Bindu**: Concentric seed circle at origin `[0.0, 0.0]`. Never empty.
-2. **Dense Concentric Rings**: 6 annular bands filled with lotus petals, golden spines, jewels, and seed pearls.
-3. **Square Outer Boundary**: Outermost frame aligned to `[-0.95, 0.95]` in Abyssal Navy (`#061735`) with golden and white perimeter borders.
-4. **Four Torana Gateways**: Stepped T-shaped portals guarding cardinal axes (North, South, East, West).
-5. **Outward Radiation**: Complexity increases outward from inner 8-petal core to 64-tooth flame rim.
-6. **Canonical Pigments**:
-   - **Lapis Lazuli**: `#26619C`
-   - **Vermilion**: `#E34234`
-   - **Malachite Green**: `#0BDA51`
-   - **Conch White**: `#FAF0E6`
-   - **Gold Leaf**: `#D4A017`
-   - **Cinnabar Red**: `#E44D2E`
+Every mandala opens at the **bindu** — a vermilion seed at the very centre, ringed in gold, haloed, seated on eight white lotus seeds. In Indian sacred geometry the bindu is the point before beginning. It is never empty here.
+
+From the bindu, six concentric rings bloom outward:
+
+- An eight-petal lotus heart in lapis and white.
+- Bands of layered petals in vermilion, conch white, and deep malachite, each petal veined in gold and tipped with a jewel or pearl.
+- Petals overlap like roof shingles, each laid over the last in a steady clockwise rhythm.
+- Between the rings run fine chains of seed pearls and gold diamonds — quiet lace that holds the composition together.
+- The outermost band closes in a 64-tooth flame rim, beaten gold against the dark.
+
+The whole circle sits inside a square courtyard of abyssal navy, edged in gold and conch white. Four **torana gateways** — stepped temple portals — guard the cardinal directions, flanked by vermilion pillar stones. The four corners hold rosettes with fans of vine dots, so no corner of the square sits empty.
+
+Complexity grows as the eye travels out: small and calm at the centre, dense and flaming at the edge. That gradient is deliberate. It is the grammar of the form.
+
+## The Palette
+
+Six canonical pigments, drawn from the Indian miniature and mural traditions:
+
+- **Lapis Lazuli** `#26619C` — the blue of Krishna's skin, of deep water.
+- **Vermilion** `#E34234` — sindoor red, auspicious and loud.
+- **Malachite Green** `#1E9E50` — deep and quiet, used with restraint.
+- **Conch White** `#FAF0E6` — warm ivory, the ground the brights sing against.
+- **Gold Leaf** `#D4A017` — veins, rims, teeth, halos. The light in the work.
+- **Cinnabar Red** `#E44D2E` — the outer fire band.
+
+Each seed re-deals these colours across the rings, so the same geometry can feel like dawn in one seed and embers in another.
+
+## Sitting With It
+
+Open the [live viewer](https://mugglebornpadawan.github.io/chittu-1314-mandala/). It evolves on its own — a new mandala every few seconds.
+
+- **⚡ Next Seed**: grow a new mandala right now.
+- **⏸ Pause / ▶ Resume**: hold one still, or let the cycle run.
+- **Seed box**: type any number to revisit an exact mandala.
+- **Symmetry**: choose eight-, twelve-, or sixteen-fold geometry.
+- **Palette**: deal the colours in five different orders.
+- **Download PNG**: keep the one you love.
+
+There is no reload, no waiting. Each mandala is computed in your browser, in the moment.
 
 ---
 
-## Project Structure
+## For the Technically Inclined
+
+Everything below this line is implementation. The art above stands without it.
+
+### How It Works
+
+- **Pure functional core.** Geometry is data, built with zero side effects and zero renderer dependencies (`src/art/artforms/mandala.clj`).
+- **True dihedral symmetry.** Designs repeat in $D_8$, $D_{12}$, or $D_{16}$ — rotated *and* mirrored.
+- **Seeded everything.** One integer seed drives symmetry, palette, ring radii, petal curl, petal width, jewel density, and petal overlap. Same seed yields the identical mandala on JVM Clojure, Babashka, and in-browser Scittle.
+- **Time-seeding.** No seed given means the current timestamp is used — infinite fresh variation, each one reproducible.
+- **Normalized space.** All geometry lives in $[-1.0, 1.0]$. Renderers only scale.
+- **Deterministic PRNG.** A portable LCG (multiplier 1664525, mod $2^{32}$) kept inside 53-bit integers so all three runtimes agree bit-for-bit.
+
+### Project Structure
 
 ```text
 ├── .github/workflows/pages.yml      # GitHub Pages deploy (public/)
-├── bb.edn                         # Babashka task definitions (test, export, serve)
-├── deps.edn                       # Clojure JVM CLI dependencies and aliases
-├── README.md                      # Project documentation and guide
+├── bb.edn                         # Babashka tasks (test, export, serve)
+├── deps.edn                       # Clojure JVM CLI dependencies
+├── README.md                      # This file
 ├── atelier/chitrapata.org           # Master ontology (submodule → chitrapata-ontology)
+├── scripts/
+│   └── live_check.bb              # Live deployed-page smoke test (16 checks)
 ├── src/
 │   └── art/
 │       ├── artforms/
-│       │   └── mandala.clj        # Pure mandala PCG generator
-│       ├── export.clj             # Vector SVG, art.json, and Scittle HTML exporter
+│       │   └── mandala.clj        # Pure mandala generator
+│       ├── export.clj             # SVG, art.json, and Scittle HTML exporter
 │       └── server.clj             # Zero-dependency Babashka HTTP server
 ├── test/
 │   └── art/
 │       └── artforms/
-│           └── mandala_test.clj   # Unit tests (10,787 assertions)
+│           └── mandala_test.clj   # Unit tests (22,691 assertions)
 └── public/
     ├── index.html                 # Interactive live Scittle browser viewer
     ├── mandala.svg                # Resolution-independent vector export
@@ -63,55 +92,40 @@ Written in pure functional **Clojure** and executable with **Babashka** (`bb`) a
         └── scittle.js             # Local offline in-browser Clojure interpreter
 ```
 
----
+### Quickstart
 
-## Quickstart
-
-### 1. Run Automated Unit Tests
+Run the tests:
 
 ```bash
 bb test
 ```
 
-Verifies:
-- PCG contract schema (`:seed`, `:artform`, `:params`, `:palette`, `:layers`, `:primitives`).
-- Mathematical determinism across seeds (`42`, `108`, `1314`, `2026`).
-- Coordinate boundaries strictly within $[-1.0, 1.0]$.
-- Enforcement of all 6 sacred visual invariants.
+This verifies the PCG contract schema, determinism across seeds (`42`, `108`, `1314`, `2026`), coordinate bounds within $[-1.0, 1.0]$, and all 6 sacred visual invariants.
 
-### 2. Export Artwork
-
-Export a dynamic artwork seeded by the current system timestamp:
+Export an artwork (timestamp seed, or a fixed one):
 
 ```bash
 bb export
-```
-
-Export a reproducible artwork for a specific seed:
-
-```bash
 bb export 42
 ```
 
-Outputs written to [`public/`](public/):
-- [`public/art.json`](public/art.json) (USD-aligned scene data)
-- [`public/mandala.svg`](public/mandala.svg) (High-precision vector markup)
-- [`public/index.html`](public/index.html) (Live browser viewer)
+Outputs go to [`public/`](public/): `art.json`, `mandala.svg`, `index.html`.
 
-### 3. Launch Live Browser Viewer
+Serve locally:
 
 ```bash
 bb serve
 ```
 
-Open [http://localhost:8000](http://localhost:8000) in your browser:
-- **⚡ Next Seed (Time)**: Evaluates a new timestamp seed instantly in browser memory.
-- **⏸ Pause / ▶ Resume Auto-Evolve**: Cycles through new mandalas every 2.5 seconds without page reload.
-- **Custom Seed Input**: Enter any seed number to inspect or reproduce that exact artwork.
+Then open [http://localhost:8000](http://localhost:8000).
 
----
+Test the deployed page (16 checks: status, viewer markers, JSON contract, SVG glow, PNG bytes):
 
-## REPL Usage (Emacs / CIDER / Babashka)
+```bash
+bb scripts/live_check.bb
+```
+
+### REPL Usage (Emacs / CIDER / Babashka)
 
 ```clojure
 (require '[art.artforms.mandala :as mandala])
@@ -120,14 +134,15 @@ Open [http://localhost:8000](http://localhost:8000) in your browser:
 (def artwork (mandala/generate {:seed 42}))
 
 ;; Inspect primitives count and layers
-(count (:primitives artwork)) ; => 834
-(mapv :id (:layers artwork))  ; => [:square-boundary :annular-backgrounds :ring-0 ... :bindu]
+(count (:primitives artwork)) ; => 1855
+(mapv :id (:layers artwork))  ; => [:square-boundary :annular-backgrounds :ring-0 ... :lace-0 ... :flame-rim :torana-gates :bindu]
 
 ;; Override parameters interactively
 (def custom-mandala
   (mandala/generate
     {:seed 108
      :params {:symmetry-order 16
+              :petal-overlap 1.4
               :palette [:gold-leaf :lapis-lazuli :vermilion :conch-white]}}))
 ```
 
