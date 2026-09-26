@@ -28,6 +28,7 @@
   (check "page-200" (= 200 status) (str "status " status))
   (when (= 200 status)
     (check "page-art-frame" (str/includes? body "art-frame") nil)
+    (check "page-edition" (str/includes? body "Edition No.") nil)
     (check "page-scittle" (str/includes? body "scittle") nil)
     (check "page-controls" (str/includes? body "seed-input") nil)))
 
@@ -64,5 +65,6 @@
       (check "png-magic" (= [137 80 78 71] magic) (str "magic " magic))
       (check "png-size" (> (count body) 100000) (str (count body) " bytes")))))
 
-(println (str "\n" (- 16 (count @failures)) "/16 checks passed."))
+(let [total 17]
+  (println (str "\n" (- total (count @failures)) "/" total " checks passed.")))
 (System/exit (if (empty? @failures) 0 1))
