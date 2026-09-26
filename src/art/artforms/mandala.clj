@@ -157,7 +157,8 @@
         ;; Seed-driven shape variety (fixed RNG order: width, curl, jewel)
         width-jitter (get user-params :petal-width-jitter (next-double 0.85 1.15))
         curl (get user-params :petal-curl (next-double -0.15 0.15))
-        jewel-density (get user-params :jewel-density (next-double 0.5 1.0))]
+        jewel-density (get user-params :jewel-density (next-double 0.5 1.0))
+        overlap (get user-params :petal-overlap (next-double 1.1 1.5))]
 
     (merge
      {:symmetry-order       sym
@@ -172,6 +173,7 @@
       :petal-width-jitter   width-jitter
       :petal-curl           curl
       :jewel-density        jewel-density
+      :petal-overlap        overlap
       :palette              pal}
      user-params)))
 
@@ -289,7 +291,7 @@
   "Generate motif primitives for one angular sector of ring `ring-idx`."
   [ring-idx inner-r outer-r sector-angle depth total-petals symmetry-order palette-hex shape]
   (let [k             (max 1 (quot total-petals symmetry-order))
-        half-width    (* (/ sector-angle (* 2.0 k)) 0.96 (:width-jitter shape 1.0))
+        half-width    (* (/ sector-angle (* 2.0 k)) 0.96 (:width-jitter shape 1.0) (:overlap shape 1.0))
         curl          (:curl shape 0.0)
         jewel-density (:jewel-density shape 1.0)
         col-gold      (get pigment-hex-map :gold-leaf)
@@ -716,7 +718,8 @@
          sector-angle  (/ (* 2.0 Math/PI) (double symmetry-order))
          shape         {:width-jitter (:petal-width-jitter p 1.0)
                         :curl (:petal-curl p 0.0)
-                        :jewel-density (:jewel-density p 1.0)}
+                        :jewel-density (:jewel-density p 1.0)
+                        :overlap (:petal-overlap p 1.0)}
          palette-hex   (mapv #(get pigment-hex-map % (get pigment-hex-map :gold-leaf)) palette)
          palette-meta  (mapv (fn [k] {:name (name k) :hex (get pigment-hex-map k)}) palette)
          col-gold      (get pigment-hex-map :gold-leaf)
