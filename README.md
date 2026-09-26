@@ -43,7 +43,7 @@ Written in pure functional **Clojure** and executable with **Babashka** (`bb`) a
 ├── bb.edn                         # Babashka task definitions (test, export, serve)
 ├── deps.edn                       # Clojure JVM CLI dependencies and aliases
 ├── README.md                      # Project documentation and guide
-├── chitrapata.org                 # Master ontology and atelier specification
+├── atelier/chitrapata.org           # Master ontology (submodule → chitrapata-ontology)
 ├── src/
 │   └── art/
 │       ├── artforms/
@@ -136,4 +136,4 @@ Open [http://localhost:8000](http://localhost:8000) in your browser:
 ## License
 
 GNU General Public License v3.0 with the GNU Classpath / EPL Section 7 Linking Exception.
-See [`chitrapata.org`](chitrapata.org) for atelier ontology and licensing topology.
+See [`atelier/chitrapata.org`](atelier/chitrapata.org) for atelier ontology and licensing topology.
