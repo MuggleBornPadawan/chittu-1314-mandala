@@ -2,8 +2,7 @@
   "Pure Mandala procedural art generator.
    Adheres to Chitrapata PCG contract and D_n dihedral radial symmetry specifications.
    Zero renderer dependencies. Pure data-first geometry in [-1.0, 1.0] local space.
-   100% portable across Clojure JVM, Babashka, and Scittle (browser Clojure)."
-  (:require [clojure.string :as str]))
+   100% portable across Clojure JVM, Babashka, and Scittle (browser Clojure).")
 
 ;; =============================================================================
 ;; Canonical Pigment Map (Mandala Tradition)
@@ -104,14 +103,14 @@
   (let [rng         (make-rng seed)
         next-int    (fn [bound] (int (Math/floor (* (rng) bound))))
         next-double (fn [min-v max-v] (+ min-v (* (rng) (- max-v min-v))))
-        
+
         ;; Symmetry order in {8, 12, 16} (mandala quadrant multiple of 4)
         sym-options [8 8 12 12 16]
         sym         (get user-params :symmetry-order (nth sym-options (next-int (count sym-options))))
-        
+
         ;; Palette selection
         pal         (get user-params :palette (nth canonical-palettes (next-int (count canonical-palettes))))
-        
+
         ;; Dynamic ring radii (strictly ascending, outer ring in [0.86, 0.89])
         r0 (next-double 0.11 0.13)
         r1 (next-double 0.23 0.26)
@@ -120,22 +119,22 @@
         r4 (next-double 0.68 0.72)
         r5 (next-double 0.86 0.89)
         radii (get user-params :ring-radii [r0 r1 r2 r3 r4 r5])
-        
+
         ;; Petal density per ring (multiples of symmetry order)
         petals (get user-params :petal-count-per-ring [sym (* 2 sym) (* 2 sym) (* 4 sym) (* 4 sym) (* 8 sym)])]
-    
+
     (merge
-      {:symmetry-order       sym
-       :ring-count           6
-       :ring-radii           radii
-       :bindu-radius         0.04
-       :square-size          1.90
-       :torana-width         0.22
-       :torana-depth         0.10
-       :motif-depths         [0 1 2 2 3 3]
-       :petal-count-per-ring petals
-       :palette              pal}
-      user-params)))
+     {:symmetry-order       sym
+      :ring-count           6
+      :ring-radii           radii
+      :bindu-radius         0.04
+      :square-size          1.90
+      :torana-width         0.22
+      :torana-depth         0.10
+      :motif-depths         [0 1 2 2 3 3]
+      :petal-count-per-ring petals
+      :palette              pal}
+     user-params)))
 
 ;; =============================================================================
 ;; Lotus Petal & Motif Generators
@@ -256,12 +255,12 @@
         col-secondary (nth palette-hex (mod (+ ring-idx 2) (count palette-hex)))
         col-accent    (nth palette-hex (mod (+ ring-idx 4) (count palette-hex)))]
     (vec
-      (mapcat (fn [j]
-                (let [mid-angle (* sector-angle (/ (+ j 0.5) (double k)))]
-                  (single-petal-motifs inner-r outer-r mid-angle half-width depth
-                                       col-primary col-secondary col-accent
-                                       col-gold col-white col-black)))
-              (range k)))))
+     (mapcat (fn [j]
+               (let [mid-angle (* sector-angle (/ (+ j 0.5) (double k)))]
+                 (single-petal-motifs inner-r outer-r mid-angle half-width depth
+                                      col-primary col-secondary col-accent
+                                      col-gold col-white col-black)))
+             (range k)))))
 
 ;; =============================================================================
 ;; Cardinal Torana Gate Architecture (Sacred Portals)
@@ -441,10 +440,10 @@
         col-white     (get pigment-hex-map :conch-white)
         col-black     (get pigment-hex-map :lampblack)
         gates         (concat
-                        (torana-gate-cardinal :north s torana-w torana-d col-gold col-vermilion col-white col-black)
-                        (torana-gate-cardinal :south s torana-w torana-d col-gold col-vermilion col-white col-black)
-                        (torana-gate-cardinal :east  s torana-w torana-d col-gold col-vermilion col-white col-black)
-                        (torana-gate-cardinal :west  s torana-w torana-d col-gold col-vermilion col-white col-black))
+                       (torana-gate-cardinal :north s torana-w torana-d col-gold col-vermilion col-white col-black)
+                       (torana-gate-cardinal :south s torana-w torana-d col-gold col-vermilion col-white col-black)
+                       (torana-gate-cardinal :east  s torana-w torana-d col-gold col-vermilion col-white col-black)
+                       (torana-gate-cardinal :west  s torana-w torana-d col-gold col-vermilion col-white col-black))
         frames
         [;; Outermost background square courtyard
          {:type :polygon
@@ -538,29 +537,29 @@
          ;; Drawn in DESCENDING order of radius so inner circles naturally layer over outer circles!
          bg-discs
          (mapv
-           (fn [i]
-             (let [radius   (nth ring-radii i)
-                   bg-color (nth palette-hex (mod i (count palette-hex)))]
-               {:type :circle
-                :center [0.0 0.0]
-                :radius radius
-                :fill bg-color
-                :stroke col-black
-                :stroke-width 0.002}))
-           (reverse (range valid-rings)))
+          (fn [i]
+            (let [radius   (nth ring-radii i)
+                  bg-color (nth palette-hex (mod i (count palette-hex)))]
+              {:type :circle
+               :center [0.0 0.0]
+               :radius radius
+               :fill bg-color
+               :stroke col-black
+               :stroke-width 0.002}))
+          (reverse (range valid-rings)))
 
          ;; Gold rims at ring perimeters
          gold-rims
          (mapv
-           (fn [i]
-             (let [radius (nth ring-radii i)]
-               {:type :circle
-                :center [0.0 0.0]
-                :radius radius
-                :fill nil
-                :stroke col-gold
-                :stroke-width 0.003}))
-           (range valid-rings))
+          (fn [i]
+            (let [radius (nth ring-radii i)]
+              {:type :circle
+               :center [0.0 0.0]
+               :radius radius
+               :fill nil
+               :stroke col-gold
+               :stroke-width 0.003}))
+          (range valid-rings))
 
          backgrounds-l
          {:id :annular-backgrounds
@@ -570,17 +569,17 @@
          ;; 3. Motif Layers per Ring (Layers 2..k+1)
          ring-layers
          (mapv
-           (fn [i]
-             (let [inner-r    (if (zero? i) bindu-radius (nth ring-radii (dec i)))
-                   outer-r    (nth ring-radii i)
-                   depth      (nth motif-depths i 1)
-                   petals     (nth petal-count-per-ring i symmetry-order)
-                   sector-m   (ring-sector-motifs i inner-r outer-r sector-angle depth petals symmetry-order palette-hex)
-                   replicated (replicate-d-n sector-m symmetry-order)]
-               {:id (keyword (str "ring-" i))
-                :z-index (+ 2 i)
-                :primitives (vec replicated)}))
-           (range valid-rings))
+          (fn [i]
+            (let [inner-r    (if (zero? i) bindu-radius (nth ring-radii (dec i)))
+                  outer-r    (nth ring-radii i)
+                  depth      (nth motif-depths i 1)
+                  petals     (nth petal-count-per-ring i symmetry-order)
+                  sector-m   (ring-sector-motifs i inner-r outer-r sector-angle depth petals symmetry-order palette-hex)
+                  replicated (replicate-d-n sector-m symmetry-order)]
+              {:id (keyword (str "ring-" i))
+               :z-index (+ 2 i)
+               :primitives (vec replicated)}))
+          (range valid-rings))
 
          ;; 4. Central Bindu (Topmost Layer)
          bindu-l       (bindu-layer bindu-radius)

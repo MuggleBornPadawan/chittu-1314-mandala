@@ -1,5 +1,6 @@
 (ns art.artforms.mandala-test
-  (:require [clojure.test :refer [deftest is testing run-tests]]
+  (:require [clojure.set :as set]
+            [clojure.test :refer [deftest is testing]]
             [art.artforms.mandala :as mandala]))
 
 (deftest test-schema-and-contract
@@ -105,4 +106,4 @@
     (testing "Visual Invariant: Palette uses only canonical pigments"
       (let [palette-names (set (map :name (:palette art)))
             canonical-names (set (map name (keys mandala/pigment-hex-map)))]
-        (is (empty? (clojure.set/difference palette-names canonical-names)))))))
+        (is (empty? (set/difference palette-names canonical-names)))))))
