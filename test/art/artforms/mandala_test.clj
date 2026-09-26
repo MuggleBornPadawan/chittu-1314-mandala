@@ -109,6 +109,16 @@
             canonical-names (set (map name (keys mandala/pigment-hex-map)))]
         (is (empty? (set/difference palette-names canonical-names)))))))
 
+(deftest test-seed-shape-variance
+  (testing "Different seeds vary shape params, same seed is stable"
+    (let [a42 (mandala/generate {:seed 42})
+          a99 (mandala/generate {:seed 99})
+          b42 (mandala/generate {:seed 42})]
+      (is (= (:params b42) (:params a42)) "same seed same params")
+      (is (not= (:petal-width-jitter (:params a42)) (:petal-width-jitter (:params a99)))
+          "different seeds differ in shape")
+      (is (not= (:primitives a42) (:primitives a99)) "art differs"))))
+
 (deftest test-svg-has-gradient
   (testing "SVG defines glow gradient, palette is muted"
     (let [export-src (slurp "src/art/export.clj")]

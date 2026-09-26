@@ -152,7 +152,12 @@
         radii (get user-params :ring-radii [r0 r1 r2 r3 r4 r5])
 
         ;; Petal density per ring (multiples of symmetry order)
-        petals (get user-params :petal-count-per-ring [sym (* 2 sym) (* 2 sym) (* 4 sym) (* 4 sym) (* 8 sym)])]
+        petals (get user-params :petal-count-per-ring [sym (* 2 sym) (* 2 sym) (* 4 sym) (* 4 sym) (* 8 sym)])
+
+        ;; Seed-driven shape variety (fixed RNG order: width, curl, jewel)
+        width-jitter (get user-params :petal-width-jitter (next-double 0.85 1.15))
+        curl (get user-params :petal-curl (next-double -0.15 0.15))
+        jewel-density (get user-params :jewel-density (next-double 0.5 1.0))]
 
     (merge
      {:symmetry-order       sym
@@ -164,6 +169,9 @@
       :torana-depth         0.10
       :motif-depths         [0 1 2 2 3 3]
       :petal-count-per-ring petals
+      :petal-width-jitter   width-jitter
+      :petal-curl           curl
+      :jewel-density        jewel-density
       :palette              pal}
      user-params)))
 
@@ -173,21 +181,23 @@
 
 (defn- petal-contour
   "Generate a smooth curved lotus petal contour polygon."
-  [r-in r-out mid-angle half-width fill stroke-color stroke-width]
+  [r-in r-out mid-angle half-width fill stroke-color stroke-width curl]
   (let [n-pts 6
         pts-l (for [i (range n-pts)]
                 (let [t (/ (double i) (dec n-pts))
                       r (+ r-in (* (- r-out r-in) t))
+                      mid (+ mid-angle (* (or curl 0.0) t))
                       w-factor (* (Math/sin (* (- 1.0 t) (/ Math/PI 2.0)))
                                   (+ 1.0 (* 0.32 (Math/sin (* Math/PI t)))))
-                      a (- mid-angle (* half-width w-factor))]
+                      a (- mid (* half-width w-factor))]
                   (polar->cart r a)))
         pts-r (for [i (range (- n-pts 2) -1 -1)]
                 (let [t (/ (double i) (dec n-pts))
                       r (+ r-in (* (- r-out r-in) t))
+                      mid (+ mid-angle (* (or curl 0.0) t))
                       w-factor (* (Math/sin (* (- 1.0 t) (/ Math/PI 2.0)))
                                   (+ 1.0 (* 0.32 (Math/sin (* Math/PI t)))))
-                      a (+ mid-angle (* half-width w-factor))]
+                      a (+ mid (* half-width w-factor))]
                   (polar->cart r a)))]
     {:type :polygon
      :points (vec (concat pts-l pts-r))
@@ -197,88 +207,91 @@
 
 (defn- single-petal-motifs
   "Generate a single petal structure (nested cusps, spine, pearl) at `mid-angle`."
-  [inner-r outer-r mid-angle half-width depth col-primary col-secondary col-accent col-gold col-white col-black]
-  (case depth
-    ;; Depth 0: Core lotus petal with central gold vein and base pearl
-    0
-    [(petal-contour inner-r outer-r mid-angle (* 0.46 half-width) col-gold col-black 0.002)
-     {:type :line
-      :from (polar->cart inner-r mid-angle)
-      :to (polar->cart (* 0.96 outer-r) mid-angle)
-      :stroke col-secondary
-      :stroke-width 0.002}
-     {:type :circle
-      :center (polar->cart (+ inner-r (* 0.40 (- outer-r inner-r))) mid-angle)
-      :radius 0.007
-      :fill col-white
-      :stroke col-black
-      :stroke-width 0.001}]
+  [inner-r outer-r mid-angle half-width depth col-primary col-secondary col-accent col-gold col-white col-black _width-jitter curl jewel-density]
+  (let [jd (or jewel-density 1.0)]
+    (case depth
+      ;; Depth 0: Core lotus petal with central gold vein and base pearl
+      0
+      [(petal-contour inner-r outer-r mid-angle (* 0.46 half-width) col-gold col-black 0.002 curl)
+       {:type :line
+        :from (polar->cart inner-r mid-angle)
+        :to (polar->cart (* 0.96 outer-r) mid-angle)
+        :stroke col-secondary
+        :stroke-width 0.002}
+       {:type :circle
+        :center (polar->cart (+ inner-r (* 0.40 (- outer-r inner-r))) mid-angle)
+        :radius (* 0.007 jd)
+        :fill col-white
+        :stroke col-black
+        :stroke-width 0.001}]
 
     ;; Depth 1: Radiant lotus petal with spine and jewel
-    1
-    (let [petal (petal-contour inner-r outer-r mid-angle (* 0.48 half-width) col-secondary col-black 0.002)
-          spine {:type :line
-                 :from (polar->cart inner-r mid-angle)
-                 :to (polar->cart (* 0.96 outer-r) mid-angle)
-                 :stroke col-gold
-                 :stroke-width 0.002}
-          jewel {:type :circle
-                 :center (polar->cart (+ inner-r (* 0.45 (- outer-r inner-r))) mid-angle)
-                 :radius 0.009
-                 :fill col-white
-                 :stroke col-black
-                 :stroke-width 0.0015}]
-      [petal spine jewel])
-
-    ;; Depth 2: Double nested lotus petals with sacred gem
-    2
-    (let [outer-p (petal-contour inner-r outer-r mid-angle (* 0.49 half-width) col-primary col-black 0.0025)
-          inner-top (+ inner-r (* 0.72 (- outer-r inner-r)))
-          inner-p (petal-contour inner-r inner-top mid-angle (* 0.28 half-width) col-accent col-black 0.002)
-          spine   {:type :line
+      1
+      (let [petal (petal-contour inner-r outer-r mid-angle (* 0.48 half-width) col-secondary col-black 0.002 curl)
+            spine {:type :line
                    :from (polar->cart inner-r mid-angle)
                    :to (polar->cart (* 0.96 outer-r) mid-angle)
                    :stroke col-gold
                    :stroke-width 0.002}
-          gem-r   (+ inner-r (* 0.42 (- outer-r inner-r)))
-          gem     {:type :circle
-                   :center (polar->cart gem-r mid-angle)
-                   :radius 0.010
-                   :fill col-gold
-                   :stroke col-black
-                   :stroke-width 0.0015}
-          gem-c   {:type :circle
-                   :center (polar->cart gem-r mid-angle)
-                   :radius 0.005
+            jewel {:type :circle
+                   :center (polar->cart (+ inner-r (* 0.45 (- outer-r inner-r))) mid-angle)
+                   :radius (* 0.009 jd)
                    :fill col-white
                    :stroke col-black
-                   :stroke-width 0.001}]
-      [outer-p inner-p spine gem gem-c])
+                   :stroke-width 0.0015}]
+        [petal spine jewel])
+
+    ;; Depth 2: Double nested lotus petals with sacred gem
+      2
+      (let [outer-p (petal-contour inner-r outer-r mid-angle (* 0.49 half-width) col-primary col-black 0.0025 curl)
+            inner-top (+ inner-r (* 0.72 (- outer-r inner-r)))
+            inner-p (petal-contour inner-r inner-top mid-angle (* 0.28 half-width) col-accent col-black 0.002 curl)
+            spine   {:type :line
+                     :from (polar->cart inner-r mid-angle)
+                     :to (polar->cart (* 0.96 outer-r) mid-angle)
+                     :stroke col-gold
+                     :stroke-width 0.002}
+            gem-r   (+ inner-r (* 0.42 (- outer-r inner-r)))
+            gem     {:type :circle
+                     :center (polar->cart gem-r mid-angle)
+                     :radius (* 0.010 jd)
+                     :fill col-gold
+                     :stroke col-black
+                     :stroke-width 0.0015}
+            gem-c   {:type :circle
+                     :center (polar->cart gem-r mid-angle)
+                     :radius (* 0.005 jd)
+                     :fill col-white
+                     :stroke col-black
+                     :stroke-width 0.001}]
+        [outer-p inner-p spine gem gem-c])
 
     ;; Depth 3+: Triple nested lotus petals with gold core and pearl tip
-    (let [outer-p  (petal-contour inner-r outer-r mid-angle (* 0.49 half-width) col-secondary col-black 0.0025)
-          mid-top  (+ inner-r (* 0.78 (- outer-r inner-r)))
-          mid-p    (petal-contour inner-r mid-top mid-angle (* 0.32 half-width) col-primary col-black 0.002)
-          core-top (+ inner-r (* 0.48 (- outer-r inner-r)))
-          core-p   (petal-contour inner-r core-top mid-angle (* 0.16 half-width) col-gold col-black 0.0015)
-          spine    {:type :line
-                    :from (polar->cart inner-r mid-angle)
-                    :to (polar->cart (* 0.98 outer-r) mid-angle)
-                    :stroke col-white
-                    :stroke-width 0.002}
-          pearl    {:type :circle
-                    :center (polar->cart (+ inner-r (* 0.48 (- outer-r inner-r))) mid-angle)
-                    :radius 0.008
-                    :fill col-white
-                    :stroke col-black
-                    :stroke-width 0.0015}]
-      [outer-p mid-p core-p spine pearl])))
+      (let [outer-p  (petal-contour inner-r outer-r mid-angle (* 0.49 half-width) col-secondary col-black 0.0025 curl)
+            mid-top  (+ inner-r (* 0.78 (- outer-r inner-r)))
+            mid-p    (petal-contour inner-r mid-top mid-angle (* 0.32 half-width) col-primary col-black 0.002 curl)
+            core-top (+ inner-r (* 0.48 (- outer-r inner-r)))
+            core-p   (petal-contour inner-r core-top mid-angle (* 0.16 half-width) col-gold col-black 0.0015 curl)
+            spine    {:type :line
+                      :from (polar->cart inner-r mid-angle)
+                      :to (polar->cart (* 0.98 outer-r) mid-angle)
+                      :stroke col-white
+                      :stroke-width 0.002}
+            pearl    {:type :circle
+                      :center (polar->cart (+ inner-r (* 0.48 (- outer-r inner-r))) mid-angle)
+                      :radius (* 0.008 jd)
+                      :fill col-white
+                      :stroke col-black
+                      :stroke-width 0.0015}]
+        [outer-p mid-p core-p spine pearl]))))
 
 (defn- ring-sector-motifs
   "Generate motif primitives for one angular sector of ring `ring-idx`."
-  [ring-idx inner-r outer-r sector-angle depth total-petals symmetry-order palette-hex]
+  [ring-idx inner-r outer-r sector-angle depth total-petals symmetry-order palette-hex shape]
   (let [k             (max 1 (quot total-petals symmetry-order))
-        half-width    (* (/ sector-angle (* 2.0 k)) 0.96)
+        half-width    (* (/ sector-angle (* 2.0 k)) 0.96 (:width-jitter shape 1.0))
+        curl          (:curl shape 0.0)
+        jewel-density (:jewel-density shape 1.0)
         col-gold      (get pigment-hex-map :gold-leaf)
         col-white     (get pigment-hex-map :conch-white)
         col-black     (get pigment-hex-map :lampblack)
@@ -290,7 +303,8 @@
                (let [mid-angle (* sector-angle (/ (+ j 0.5) (double k)))]
                  (single-petal-motifs inner-r outer-r mid-angle half-width depth
                                       col-primary col-secondary col-accent
-                                      col-gold col-white col-black)))
+                                      col-gold col-white col-black
+                                      (:width-jitter shape 1.0) curl jewel-density)))
              (range k)))))
 
 (defn- lace-sector-motifs
@@ -589,6 +603,9 @@
                  torana-width torana-depth
                  petal-count-per-ring palette]} p
          sector-angle  (/ (* 2.0 Math/PI) (double symmetry-order))
+         shape         {:width-jitter (:petal-width-jitter p 1.0)
+                        :curl (:petal-curl p 0.0)
+                        :jewel-density (:jewel-density p 1.0)}
          palette-hex   (mapv #(get pigment-hex-map % (get pigment-hex-map :gold-leaf)) palette)
          palette-meta  (mapv (fn [k] {:name (name k) :hex (get pigment-hex-map k)}) palette)
          col-gold      (get pigment-hex-map :gold-leaf)
@@ -596,8 +613,8 @@
          valid-rings   (min ring-count (count ring-radii))
 
           ;; 1. Square Boundary (Layer 0) + Torana Gates (Layer 5, above discs)
-          boundary-l    (square-boundary-layer square-size torana-width torana-depth)
-          gates-l       (torana-gates-layer square-size torana-width torana-depth)
+         boundary-l    (square-boundary-layer square-size torana-width torana-depth)
+         gates-l       (torana-gates-layer square-size torana-width torana-depth)
 
          ;; 2. Annular Background Bands (Layer 1)
          ;; Drawn in DESCENDING order of radius so inner circles naturally layer over outer circles!
@@ -640,7 +657,7 @@
                   outer-r    (nth ring-radii i)
                   depth      (nth motif-depths i 1)
                   petals     (nth petal-count-per-ring i symmetry-order)
-                  sector-m   (ring-sector-motifs i inner-r outer-r sector-angle depth petals symmetry-order palette-hex)
+                  sector-m   (ring-sector-motifs i inner-r outer-r sector-angle depth petals symmetry-order palette-hex shape)
                   replicated (replicate-d-n sector-m symmetry-order {:mirror? true})]
               {:id (keyword (str "ring-" i))
                :z-index (+ 2 i)
@@ -648,21 +665,21 @@
           (range valid-rings))
 
           ;; 3b. Lace Layers per Ring Band
-          lace-layers
-          (mapv
-           (fn [i]
-             (let [inner-r (if (zero? i) bindu-radius (nth ring-radii (dec i)))
-                   outer-r (nth ring-radii i)]
-               {:id (keyword (str "lace-" i))
-                :z-index (+ 30 i)
-                :primitives (lace-sector-motifs inner-r outer-r sector-angle symmetry-order)}))
-           (range valid-rings))
+         lace-layers
+         (mapv
+          (fn [i]
+            (let [inner-r (if (zero? i) bindu-radius (nth ring-radii (dec i)))
+                  outer-r (nth ring-radii i)]
+              {:id (keyword (str "lace-" i))
+               :z-index (+ 30 i)
+               :primitives (lace-sector-motifs inner-r outer-r sector-angle symmetry-order)}))
+          (range valid-rings))
 
           ;; 4. Central Bindu (Topmost Layer)
-          bindu-l       (bindu-layer bindu-radius)
+         bindu-l       (bindu-layer bindu-radius)
 
            ;; Compose All Layers in strict z-index order
-           all-layers    (into [boundary-l backgrounds-l] (concat ring-layers lace-layers [gates-l bindu-l]))
+         all-layers    (into [boundary-l backgrounds-l] (concat ring-layers lace-layers [gates-l bindu-l]))
          all-prims     (vec (mapcat :primitives all-layers))]
 
      {:seed       seed
