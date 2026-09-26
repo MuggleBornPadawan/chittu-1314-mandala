@@ -111,13 +111,13 @@
         ;; Palette selection
         pal         (get user-params :palette (nth canonical-palettes (next-int (count canonical-palettes))))
 
-        ;; Dynamic ring radii (strictly ascending, outer ring in [0.86, 0.89])
+        ;; Dynamic ring radii (strictly ascending, outer ring in [0.78, 0.82])
         r0 (next-double 0.11 0.13)
         r1 (next-double 0.23 0.26)
         r2 (next-double 0.37 0.40)
         r3 (next-double 0.52 0.56)
         r4 (next-double 0.68 0.72)
-        r5 (next-double 0.86 0.89)
+        r5 (next-double 0.78 0.82)
         radii (get user-params :ring-radii [r0 r1 r2 r3 r4 r5])
 
         ;; Petal density per ring (multiples of symmetry order)
@@ -430,7 +430,7 @@
 
 (defn- square-boundary-layer
   "Generate square outer boundary enclosure enclosing the circular mandala."
-  [square-size torana-w torana-d]
+  [square-size _torana-w _torana-d]
   (let [s (/ square-size 2.0)
         s-in1 (* s 0.97)
         s-in2 (* s 0.94)
@@ -439,11 +439,6 @@
         col-navy      "#061735" ;; Chitrapata Abyssal Navy background
         col-white     (get pigment-hex-map :conch-white)
         col-black     (get pigment-hex-map :lampblack)
-        gates         (concat
-                       (torana-gate-cardinal :north s torana-w torana-d col-gold col-vermilion col-white col-black)
-                       (torana-gate-cardinal :south s torana-w torana-d col-gold col-vermilion col-white col-black)
-                       (torana-gate-cardinal :east  s torana-w torana-d col-gold col-vermilion col-white col-black)
-                       (torana-gate-cardinal :west  s torana-w torana-d col-gold col-vermilion col-white col-black))
         frames
         [;; Outermost background square courtyard
          {:type :polygon
@@ -472,7 +467,24 @@
                          [corner-dist (- corner-dist)]])]
     {:id :square-boundary
      :z-index 0
-     :primitives (vec (concat frames corners gates))}))
+     :primitives (vec (concat frames corners))}))
+
+(defn- torana-gates-layer
+  "Generate four cardinal torana gates as top layer above discs."
+  [square-size torana-w torana-d]
+  (let [s (/ square-size 2.0)
+        col-gold (get pigment-hex-map :gold-leaf)
+        col-vermilion (get pigment-hex-map :vermilion)
+        col-white (get pigment-hex-map :conch-white)
+        col-black (get pigment-hex-map :lampblack)
+        gates (concat
+               (torana-gate-cardinal :north s torana-w torana-d col-gold col-vermilion col-white col-black)
+               (torana-gate-cardinal :south s torana-w torana-d col-gold col-vermilion col-white col-black)
+               (torana-gate-cardinal :east s torana-w torana-d col-gold col-vermilion col-white col-black)
+               (torana-gate-cardinal :west s torana-w torana-d col-gold col-vermilion col-white col-black))]
+    {:id :torana-gates
+     :z-index 5
+     :primitives (vec gates)}))
 
 ;; =============================================================================
 ;; Central Bindu Layer
@@ -530,8 +542,9 @@
          col-black     (get pigment-hex-map :lampblack)
          valid-rings   (min ring-count (count ring-radii))
 
-         ;; 1. Square Boundary & Cardinal Torana Gates (Layer 0)
-         boundary-l    (square-boundary-layer square-size torana-width torana-depth)
+          ;; 1. Square Boundary (Layer 0) + Torana Gates (Layer 5, above discs)
+          boundary-l    (square-boundary-layer square-size torana-width torana-depth)
+          gates-l       (torana-gates-layer square-size torana-width torana-depth)
 
          ;; 2. Annular Background Bands (Layer 1)
          ;; Drawn in DESCENDING order of radius so inner circles naturally layer over outer circles!
@@ -584,8 +597,8 @@
          ;; 4. Central Bindu (Topmost Layer)
          bindu-l       (bindu-layer bindu-radius)
 
-         ;; Compose All Layers in strict z-index order
-         all-layers    (into [boundary-l backgrounds-l] (conj ring-layers bindu-l))
+          ;; Compose All Layers in strict z-index order
+          all-layers    (into [boundary-l backgrounds-l] (concat ring-layers [gates-l bindu-l]))
          all-prims     (vec (mapcat :primitives all-layers))]
 
      {:seed       seed

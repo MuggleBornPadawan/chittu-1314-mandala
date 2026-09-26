@@ -86,8 +86,8 @@
         (is (some #(= :polygon (:type %)) (:primitives bound-l)))))
 
     (testing "Visual Invariant: Exactly four cardinal torana gates exist"
-      (let [bound-l (:square-boundary layer-map)
-            gate-ids (keep :id (:primitives bound-l))]
+      (let [all-prims (mapcat :primitives layers)
+            gate-ids (keep :id all-prims)]
         (is (= 4 (count (filter #{:torana-north :torana-south :torana-east :torana-west} gate-ids))))
         (is (some #{:torana-north} gate-ids))
         (is (some #{:torana-south} gate-ids))
@@ -107,3 +107,13 @@
       (let [palette-names (set (map :name (:palette art)))
             canonical-names (set (map name (keys mandala/pigment-hex-map)))]
         (is (empty? (set/difference palette-names canonical-names)))))))
+
+(deftest test-gates-above-discs
+  (testing "Torana gates draw above annular discs"
+    (let [art (mandala/generate {:seed 42})
+          layers (:layers art)
+          by-id (into {} (map (juxt :id identity) layers))
+          gates (:torana-gates by-id)
+          bg (:annular-backgrounds by-id)]
+      (is (some? gates) "torana-gates layer must exist")
+      (is (> (:z-index gates) (:z-index bg)) "gates must draw above discs"))))
