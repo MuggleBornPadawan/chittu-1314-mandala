@@ -1,5 +1,7 @@
 # Chitrapata Atelier — Procedural Mandala Generator
 
+> **Live Demo:** https://mugglebornpadawan.github.io/chittu-1314-mandala/
+
 Procedural Indian sacred geometry generator for **Chittu 13.14**.
 Written in pure functional **Clojure** and executable with **Babashka** (`bb`) and **Scittle**.
 
@@ -37,6 +39,7 @@ Written in pure functional **Clojure** and executable with **Babashka** (`bb`) a
 ## Project Structure
 
 ```text
+├── .github/workflows/pages.yml      # GitHub Pages deploy (public/)
 ├── bb.edn                         # Babashka task definitions (test, export, serve)
 ├── deps.edn                       # Clojure JVM CLI dependencies and aliases
 ├── README.md                      # Project documentation and guide
@@ -90,10 +93,10 @@ Export a reproducible artwork for a specific seed:
 bb export 42
 ```
 
-Outputs written to [`public/`](file:///home/rgroot/d/public):
-- [`public/art.json`](file:///home/rgroot/d/public/art.json) (USD-aligned scene data)
-- [`public/mandala.svg`](file:///home/rgroot/d/public/mandala.svg) (High-precision vector markup)
-- [`public/index.html`](file:///home/rgroot/d/public/index.html) (Live browser viewer)
+Outputs written to [`public/`](public/):
+- [`public/art.json`](public/art.json) (USD-aligned scene data)
+- [`public/mandala.svg`](public/mandala.svg) (High-precision vector markup)
+- [`public/index.html`](public/index.html) (Live browser viewer)
 
 ### 3. Launch Live Browser Viewer
 
@@ -133,4 +136,4 @@ Open [http://localhost:8000](http://localhost:8000) in your browser:
 ## License
 
 GNU General Public License v3.0 with the GNU Classpath / EPL Section 7 Linking Exception.
-See [`chitrapata.org`](file:///home/rgroot/d/chitrapata.org) for atelier ontology and licensing topology.
+See [`chitrapata.org`](chitrapata.org) for atelier ontology and licensing topology.
